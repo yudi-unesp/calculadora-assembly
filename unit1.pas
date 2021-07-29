@@ -133,6 +133,7 @@ begin
     end;
   end;
   field.Text := txt;
+  // Debug tirar depois
   view.Text := holder;
 end;
 
@@ -147,14 +148,18 @@ begin
   tan.Hint := 'i(';
 end;
 
+// Eu chamo quando aperto =
 procedure TForm1.CheckString();
 var
+  // Parenteses
   par: integer = 0;
   C: char;
+  // Trocar essa verificação na hora da digitação
   numberflag: boolean = False;
   decimalflag: boolean = False;
   operatorflag: boolean = False;
 begin
+  // Se o visor tiver Erro, eu saio
   if holder = 'z' then
     exit;
 
@@ -167,16 +172,18 @@ begin
     case C of
       '.':
       begin
-        if decimalflag = True then begin
+        if decimalflag = True then
+        begin
           displayerror();
           exit;
-          end
+        end;
         decimalflag := True;
         continue;
       end;
 
+      // Cada abertura de parenteses soma 1
       '(': par += 1;
-
+      // Cada fechamento de parenteses subtrai 1
       ')':
       begin
         par -= 1;
@@ -198,7 +205,8 @@ begin
     end;
   end;
 
-  if par <> 0 or decimalflag = True or operatorflag = True then
+  // Se parenteses for ≠ 0,
+  if (par <> 0) or (decimalflag = True) or (operatorflag = True) then
   begin
     displayerror();
   end;
@@ -209,7 +217,7 @@ begin
   holder := 'z';
   UpdateField();
 end;
-
+// Chamo quando aperto =
 procedure TForm1.equalsfunc(Sender: TObject);
 begin
   CheckString();
@@ -240,26 +248,35 @@ var
   str: string;
 begin
   str := holder;
-
+  // Caso tenha tamanho 1, define o display para 0
   if LENGTH(str) = 1 then
     str := '0'
   else
+    // Senão
   begin
+    // Apaga 1 caractere
     SetLength(str, LENGTH(str) - 1);
+    // Se o último caractere for uma letra, com base na tabela ASCII E não for J (pi)
     if (Ord(str[LENGTH(str)]) < 40) or (Ord(str[LENGTH(str)]) > 57) and not
       (str[LENGTH(str)] = 'j') then
     begin
+      // Caso o holder tenha tamanho 1, define o display para 0
       if LENGTH(str) = 1 then
         str := '0'
       else
+      // Senão
+      // Caso o último char seja ^ e o antecessor seja e (e^)
       if ((str[LENGTH(str)]) = '^') and ((str[LENGTH(str) - 1]) = 'e') then
       begin
+        // Se o tamanho da string for 2, mudar o display para 0
         if LENGTH(str) = 2 then
           str := '0'
         else
+          // Senão, apaga 2 caracteres
           SetLength(str, LENGTH(str) - 2);
       end
       else
+        // Senão apaga 1 caractere
         SetLength(str, LENGTH(str) - 1);
     end;
   end;
@@ -281,7 +298,10 @@ end;
 procedure TForm1.typetxthint(Sender: TObject);
 begin
   if (holder = '0') or (holder = 'z') then
-    holder := TButton(Sender).Hint
+    if (TButton(Sender).Caption = ',') then
+      holder := Concat(holder, TButton(Sender).Hint)
+    else
+      holder := TButton(Sender).Hint
   else
     holder := Concat(holder, TButton(Sender).Hint);
   UpdateField();

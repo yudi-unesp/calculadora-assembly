@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 452
+  Left = 1381
   Height = 219
-  Top = 621
+  Top = 524
   Width = 362
   Caption = 'Form1'
   ClientHeight = 219
@@ -147,12 +147,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 280
     Height = 21
+    Hint = '.'
     Top = 192
     Width = 32
     HelpType = htKeyword
     Caption = ','
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 11
   end
