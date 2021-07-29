@@ -299,7 +299,7 @@ procedure TForm1.typetxthint(Sender: TObject);
 begin
   if (holder = '0') or (holder = 'z') then
     if (TButton(Sender).Caption = ',') then
-      holder := Concat(holder, TButton(Sender).Hint)
+      holder := Concat('0', TButton(Sender).Hint)
     else
       holder := TButton(Sender).Hint
   else
