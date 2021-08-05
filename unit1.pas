@@ -59,14 +59,20 @@ type
     tan: TButton;
     procedure bckspc(Sender: TObject);
     procedure invert(Sender: TObject);
+    procedure memclrClick(Sender: TObject);
+    procedure radioClick(Sender: TObject);
     procedure typetxt(Sender: TObject);
     procedure typetxthint(Sender: TObject);
     procedure typetxthintshift(Sender: TObject);
+    procedure resetC(Sender: TObject);
+    procedure resetmemoryAC(Sender: TObject);
+    procedure resetmemory(Sender: TObject);
     procedure UpdateField();
     procedure ShiftOff();
     procedure CheckString();
     procedure equalsfunc(Sender: TObject);
     procedure displayerror();
+
   private
 
   public
@@ -76,6 +82,7 @@ type
 var
   Form1: TForm1;
   holder: string = '0';
+  degrees: boolean = True;
 
 implementation
 
@@ -137,6 +144,7 @@ begin
   view.Text := holder;
 end;
 
+// Desligar shift
 procedure TForm1.ShiftOff();
 begin
   inv.Font.Style := [];
@@ -217,6 +225,18 @@ begin
   holder := 'z';
   UpdateField();
 end;
+
+procedure TForm1.resetmemory(Sender: TObject);
+begin
+  // TODO
+end;
+
+procedure TForm1.resetmemoryAC(Sender: TObject);
+begin
+  resetC(Sender);
+  resetmemory(Sender);
+end;
+
 // Chamo quando aperto =
 procedure TForm1.equalsfunc(Sender: TObject);
 begin
@@ -240,6 +260,19 @@ begin
   begin
     ShiftOff();
   end;
+end;
+
+procedure TForm1.memclrClick(Sender: TObject);
+begin
+  // TODO
+end;
+
+procedure TForm1.radioClick(Sender: TObject);
+begin
+  if deg.Checked then
+    degrees := True
+  else
+    degrees := False;
 end;
 
 // Apaga
@@ -281,6 +314,13 @@ begin
     end;
   end;
   holder := str;
+  UpdateField();
+end;
+
+// Botão C
+procedure TForm1.resetC(Sender: TObject);
+begin
+  holder := '0';
   UpdateField();
 end;
 

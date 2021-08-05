@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 6
+  Left = 0
   Height = 219
-  Top = 110
+  Top = 23
   Width = 362
   Caption = 'Form1'
   ClientHeight = 219
@@ -20,6 +20,7 @@ object Form1: TForm1
     ChildSizing.ControlsPerLine = 1
     ClientHeight = 31
     ClientWidth = 106
+    OnClick = radioClick
     ParentBidiMode = False
     TabOrder = 40
     object deg: TRadioButton
@@ -251,6 +252,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'AC'
     Color = clScrollBar
+    OnClick = resetmemoryAC
     ParentFont = False
     TabOrder = 16
   end
@@ -263,6 +265,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'C'
     Color = clScrollBar
+    OnClick = resetC
     ParentFont = False
     TabOrder = 17
   end
@@ -336,6 +339,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'mc'
     Color = clScrollBar
+    OnClick = resetmemory
     ParentFont = False
     TabOrder = 23
   end
