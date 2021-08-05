@@ -315,6 +315,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'm-'
     Color = clScrollBar
+    OnClick = memsub
     ParentFont = False
     TabOrder = 21
   end
@@ -327,6 +328,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'm+'
     Color = clScrollBar
+    OnClick = memadd
     ParentFont = False
     TabOrder = 22
   end

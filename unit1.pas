@@ -59,7 +59,9 @@ type
     tan: TButton;
     procedure bckspc(Sender: TObject);
     procedure invert(Sender: TObject);
+    procedure memadd(Sender: TObject);
     procedure memclrClick(Sender: TObject);
+    procedure memsub(Sender: TObject);
     procedure radioClick(Sender: TObject);
     procedure typetxt(Sender: TObject);
     procedure typetxthint(Sender: TObject);
@@ -83,6 +85,9 @@ var
   Form1: TForm1;
   holder: string = '0';
   degrees: boolean = True;
+  memory: real = 0;
+  answer: real;
+  answerbool: boolean = False;
 
 implementation
 
@@ -171,9 +176,6 @@ begin
   if holder = 'z' then
     exit;
 
-
-
-
   for C in holder do
   begin
 
@@ -209,7 +211,6 @@ begin
             decimalflag := False;
         end;
       end;
-
     end;
   end;
 
@@ -241,6 +242,7 @@ end;
 procedure TForm1.equalsfunc(Sender: TObject);
 begin
   CheckString();
+  //answerbool := True;
 end;
 
 // Botão 2nd na interface. Shift para as funções sin, cos e tan
@@ -262,9 +264,19 @@ begin
   end;
 end;
 
+procedure TForm1.memadd(Sender: TObject);
+begin
+   memory += holder;
+end;
+
 procedure TForm1.memclrClick(Sender: TObject);
 begin
   // TODO
+end;
+
+procedure TForm1.memsub(Sender: TObject);
+begin
+    memory -= holder;
 end;
 
 procedure TForm1.radioClick(Sender: TObject);
@@ -280,6 +292,7 @@ procedure TForm1.bckspc(Sender: TObject);
 var
   str: string;
 begin
+  answerbool := false;
   str := holder;
   // Caso tenha tamanho 1, define o display para 0
   if LENGTH(str) = 1 then
@@ -320,6 +333,7 @@ end;
 // Botão C
 procedure TForm1.resetC(Sender: TObject);
 begin
+  answerbool := false;
   holder := '0';
   UpdateField();
 end;
@@ -327,6 +341,7 @@ end;
 // Insere o texto do campo Caption do objeto no holder
 procedure TForm1.typetxt(Sender: TObject);
 begin
+  answerbool := false;
   if (holder = '0') or (holder = 'z') then
     holder := TButton(Sender).Caption
   else
@@ -337,6 +352,7 @@ end;
 // Insere o texto do campo Hint do objeto no holder
 procedure TForm1.typetxthint(Sender: TObject);
 begin
+  answerbool := false;
   if (holder = '0') or (holder = 'z') then
     if (TButton(Sender).Caption = ',') then
       holder := Concat('0', TButton(Sender).Hint)
@@ -350,6 +366,7 @@ end;
 // Insere o texto do campo Hint do objeto no holder e desativa o shift
 procedure TForm1.typetxthintshift(Sender: TObject);
 begin
+  answerbool := false;
   if (holder = '0') or (holder = 'z') then
     holder := TButton(Sender).Hint
   else
