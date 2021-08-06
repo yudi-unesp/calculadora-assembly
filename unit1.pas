@@ -85,8 +85,8 @@ var
   Form1: TForm1;
   holder: string = '0';
   degrees: boolean = True;
-  memory: real = 0;
-  answer: real;
+  memory: extended = 0;
+  answer: extended;
   answerbool: boolean = False;
 
 implementation
