@@ -59,11 +59,10 @@ type
     tan: TButton;
     procedure bckspc(Sender: TObject);
     procedure invert(Sender: TObject);
-    procedure memadd(Sender: TObject);
+    procedure memoryadd(Sender: TObject);
     procedure memclrClick(Sender: TObject);
-    procedure memsub(Sender: TObject);
+    procedure memorysub(Sender: TObject);
     procedure radioClick(Sender: TObject);
-    procedure typetxt(Sender: TObject);
     procedure typetxthint(Sender: TObject);
     procedure typetxthintshift(Sender: TObject);
     procedure resetC(Sender: TObject);
@@ -71,9 +70,11 @@ type
     procedure resetmemory(Sender: TObject);
     procedure UpdateField();
     procedure ShiftOff();
-    procedure CheckString();
+    function CheckString(str: string): boolean;
+    procedure RecheckString(str: string);
     procedure equalsfunc(Sender: TObject);
     procedure displayerror();
+    function IsNumberOnly(str: string): boolean;
 
   private
 
@@ -88,6 +89,13 @@ var
   memory: extended = 0;
   answer: extended;
   answerbool: boolean = False;
+  par: integer = 0;
+  numberflag: boolean = True;
+  decimalflag: boolean = False;
+  operatorflag: boolean = False;
+  parflag: boolean = False;
+  startopflag: boolean = False;
+  endopflag: boolean = False;
 
 implementation
 
@@ -161,64 +169,108 @@ begin
   tan.Hint := 'i(';
 end;
 
-// Eu chamo quando aperto =
-procedure TForm1.CheckString();
+// Eu chamo quando aperto as teclas na calculadora
+function TForm1.CheckString(str: string): boolean;
 var
   // Parenteses
-  par: integer = 0;
   C: char;
-  // Trocar essa verificação na hora da digitação
-  numberflag: boolean = False;
-  decimalflag: boolean = False;
-  operatorflag: boolean = False;
 begin
-  // Se o visor tiver Erro, eu saio
-  if holder = 'z' then
-    exit;
 
-  for C in holder do
+  for C in str do
   begin
-
     case C of
-      '.':
+
+      '(':
       begin
-        if decimalflag = True then
-        begin
-          displayerror();
-          exit;
-        end;
-        decimalflag := True;
-        continue;
+        if ((numberflag = True) or (parflag = True)) and not (holder = '0') then
+          exit(False);
+        par += 1;
+        operatorflag := False;
+        numberflag := False;
       end;
 
-      // Cada abertura de parenteses soma 1
-      '(': par += 1;
-      // Cada fechamento de parenteses subtrai 1
       ')':
       begin
+        if (par <= 0) or (operatorflag = True) or
+          ((decimalflag = True) and (numberflag = False)) then
+          exit(False);
+        parflag := True;
         par -= 1;
-        if par < 0 then
-        begin
-          displayerror();
-          exit;
-        end;
       end;
+
+      '.':
+      begin
+        if (decimalflag = True) or (numberflag = False) then
+          exit(False);
+        decimalflag := True;
+        numberflag := False;
+      end;
+
+      // Fatorial
+      'f':
+      begin
+        if (numberflag = False) or (decimalflag = True) then
+          exit(False);
+        numberflag := false;
+        decimalflag := false;
+      end;
+
+      'e', 'j':
+      begin
+        if ((numberflag = True) AND (holder <> '0')) or (parflag = True) or (decimalflag = True) then
+          exit(False);
+      end;
+
+      // ln, log, √x,
+      'a', 'b', 'c':
+      begin
+        if numberflag = True and not (holder = '0') then
+          exit(False);
+        numberflag := False;
+      end;
+
+      '+', '-', '*', '/':
+      begin
+        if (operatorflag = True) or ((numberflag = False) and (decimalflag = True)) then
+          exit(False);
+        operatorflag := True;
+        decimalflag := False;
+        numberflag := False;
+        parflag := False;
+      end;
+
       else
       begin
-        if IsNumber(C) = True then
+        // 1/x
+        if str = '1/(' then
         begin
-          if decimalflag = True then
-            decimalflag := False;
+          if numberflag = True then
+            exit(False);
         end;
+
+
+        if (IsNumber(C) = True) then
+        begin
+          if parflag = True then
+            exit(False);
+          operatorflag := False;
+          numberflag := True;
+        end;
+
       end;
     end;
   end;
+  exit(True);
+end;
 
-  // Se parenteses for ≠ 0,
-  if (par <> 0) or (decimalflag = True) or (operatorflag = True) then
-  begin
-    displayerror();
-  end;
+procedure TForm1.RecheckString(str: string);
+begin
+  par := 0;
+  numberflag := False;
+  decimalflag := False;
+  operatorflag := False;
+  parflag := False;
+  CheckString(str);
 end;
 
 procedure TForm1.displayerror();
@@ -229,7 +281,7 @@ end;
 
 procedure TForm1.resetmemory(Sender: TObject);
 begin
-  // TODO
+  memory := 0;
 end;
 
 procedure TForm1.resetmemoryAC(Sender: TObject);
@@ -241,7 +293,8 @@ end;
 // Chamo quando aperto =
 procedure TForm1.equalsfunc(Sender: TObject);
 begin
-  CheckString();
+  if (par <> 0) then
+    displayerror();
   //answerbool := True;
 end;
 
@@ -264,9 +317,10 @@ begin
   end;
 end;
 
-procedure TForm1.memadd(Sender: TObject);
+procedure TForm1.memoryadd(Sender: TObject);
 begin
-   memory += holder;
+  if IsNumberOnly(holder) then
+    memory += StrToFloat(holder);
 end;
 
 procedure TForm1.memclrClick(Sender: TObject);
@@ -274,9 +328,10 @@ begin
   // TODO
 end;
 
-procedure TForm1.memsub(Sender: TObject);
+procedure TForm1.memorysub(Sender: TObject);
 begin
-    memory -= holder;
+  if IsNumberOnly(holder) then
+    memory -= StrToFloat(holder);
 end;
 
 procedure TForm1.radioClick(Sender: TObject);
@@ -292,7 +347,7 @@ procedure TForm1.bckspc(Sender: TObject);
 var
   str: string;
 begin
-  answerbool := false;
+  answerbool := False;
   str := holder;
   // Caso tenha tamanho 1, define o display para 0
   if LENGTH(str) = 1 then
@@ -327,37 +382,36 @@ begin
     end;
   end;
   holder := str;
+  RecheckString(holder);
   UpdateField();
 end;
 
 // Botão C
 procedure TForm1.resetC(Sender: TObject);
 begin
-  answerbool := false;
+  answerbool := False;
+  par := 0;
+  numberflag := True;
+  decimalflag := False;
+  operatorflag := False;
   holder := '0';
-  UpdateField();
-end;
-
-// Insere o texto do campo Caption do objeto no holder
-procedure TForm1.typetxt(Sender: TObject);
-begin
-  answerbool := false;
-  if (holder = '0') or (holder = 'z') then
-    holder := TButton(Sender).Caption
-  else
-    holder := Concat(holder, TButton(Sender).Caption);
   UpdateField();
 end;
 
 // Insere o texto do campo Hint do objeto no holder
 procedure TForm1.typetxthint(Sender: TObject);
 begin
-  answerbool := false;
+  if not CheckString(TButton(Sender).Hint) then
+    exit;
+  answerbool := False;
   if (holder = '0') or (holder = 'z') then
-    if (TButton(Sender).Caption = ',') then
-      holder := Concat('0', TButton(Sender).Hint)
-    else
-      holder := TButton(Sender).Hint
+  begin
+    case TButton(Sender).Hint of
+      '+', '-', '*', '/', 'f': holder := Concat('0', TButton(Sender).Hint);
+      else
+        holder := TButton(Sender).Hint;
+    end;
+  end
   else
     holder := Concat(holder, TButton(Sender).Hint);
   UpdateField();
@@ -366,7 +420,9 @@ end;
 // Insere o texto do campo Hint do objeto no holder e desativa o shift
 procedure TForm1.typetxthintshift(Sender: TObject);
 begin
-  answerbool := false;
+  if not CheckString(TButton(Sender).Hint) then
+    exit;
+  answerbool := False;
   if (holder = '0') or (holder = 'z') then
     holder := TButton(Sender).Hint
   else
@@ -374,6 +430,19 @@ begin
   ShiftOff();
   UpdateField();
 
+end;
+
+function TForm1.IsNumberOnly(str: string): boolean;
+var
+  C: char;
+begin
+  for C in str do
+  begin
+    if not (IsNumber(C)) AND (C <> '.')  then
+      exit(False);
+
+  end;
+  exit(True);
 end;
 
 

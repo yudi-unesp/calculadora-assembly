@@ -48,11 +48,12 @@ object Form1: TForm1
   object num9: TButton
     Left = 280
     Height = 21
+    Hint = '9'
     Top = 96
     Width = 32
     HelpType = htKeyword
     Caption = '9'
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 1
   end
@@ -69,11 +70,12 @@ object Form1: TForm1
   object num0: TButton
     Left = 200
     Height = 21
+    Hint = '0'
     Top = 192
     Width = 72
     HelpType = htKeyword
     Caption = '0'
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 2
   end
@@ -81,12 +83,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 200
     Height = 21
+    Hint = '1'
     Top = 160
     Width = 32
     HelpType = htKeyword
     Caption = '1'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 3
   end
@@ -94,12 +97,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 240
     Height = 21
+    Hint = '2'
     Top = 160
     Width = 32
     HelpType = htKeyword
     Caption = '2'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 4
   end
@@ -107,12 +111,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 280
     Height = 21
+    Hint = '3'
     Top = 160
     Width = 32
     HelpType = htKeyword
     Caption = '3'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 5
   end
@@ -120,12 +125,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 200
     Height = 21
+    Hint = '4'
     Top = 128
     Width = 32
     HelpType = htKeyword
     Caption = '4'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 6
   end
@@ -133,12 +139,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 240
     Height = 21
+    Hint = '5'
     Top = 128
     Width = 32
     HelpType = htKeyword
     Caption = '5'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 7
   end
@@ -146,12 +153,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 280
     Height = 21
+    Hint = '6'
     Top = 128
     Width = 32
     HelpType = htKeyword
     Caption = '6'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 8
   end
@@ -159,12 +167,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 200
     Height = 21
+    Hint = '7'
     Top = 96
     Width = 32
     HelpType = htKeyword
     Caption = '7'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 9
   end
@@ -172,12 +181,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 240
     Height = 21
+    Hint = '8'
     Top = 96
     Width = 32
     HelpType = htKeyword
     Caption = '8'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 10
   end
@@ -286,6 +296,7 @@ object Form1: TForm1
   object equop: TButton
     Left = 320
     Height = 21
+    Hint = '='
     Top = 192
     Width = 32
     HelpType = htKeyword
@@ -315,7 +326,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'm-'
     Color = clScrollBar
-    OnClick = memsub
+    OnClick = memorysub
     ParentFont = False
     TabOrder = 21
   end
@@ -328,7 +339,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'm+'
     Color = clScrollBar
-    OnClick = memadd
+    OnClick = memoryadd
     ParentFont = False
     TabOrder = 22
   end
@@ -405,12 +416,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 56
     Height = 21
+    Hint = ')'
     Top = 64
     Width = 38
     HelpType = htKeyword
     Caption = ')'
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 28
   end
@@ -418,12 +430,13 @@ object Form1: TForm1
     Cursor = crHandPoint
     Left = 10
     Height = 21
+    Hint = '('
     Top = 64
     Width = 38
     HelpType = htKeyword
     Caption = '('
     Color = clScrollBar
-    OnClick = typetxt
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 29
   end
@@ -562,6 +575,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'x!'
     Color = clScrollBar
+    OnClick = typetxthint
     ParentFont = False
     TabOrder = 39
   end
@@ -582,6 +596,6 @@ object Form1: TForm1
     Top = 38
     Width = 169
     TabOrder = 42
-    Text = 'view'
+    Text = 'debug (remover)'
   end
 end
