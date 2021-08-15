@@ -59,8 +59,9 @@ type
     tan: TButton;
     procedure bckspc(Sender: TObject);
     procedure invert(Sender: TObject);
-    procedure memoryadd(Sender: TObject);
+    procedure memoryrecall(Sender: TObject);
     procedure memclrClick(Sender: TObject);
+    procedure memoryadd(Sender: TObject);
     procedure memorysub(Sender: TObject);
     procedure radioClick(Sender: TObject);
     procedure typetxthint(Sender: TObject);
@@ -71,7 +72,6 @@ type
     procedure UpdateField();
     procedure ShiftOff();
     function CheckString(str: string): boolean;
-    procedure RecheckString(str: string);
     procedure equalsfunc(Sender: TObject);
     procedure displayerror();
     function IsNumberOnly(str: string): boolean;
@@ -93,14 +93,11 @@ var
   holder: string = '0';
   degrees: shortint = 1;
   memory: double = 0;
-  answer: double;
-  answerbool: boolean = False;
   par: integer = 0;
   numberflag: boolean = True;
   decimalflag: boolean = False;
   operatorflag: boolean = False;
   parflag: boolean = False;
-  startopflag: boolean = False;
   endopflag: boolean = False;
   reqnumberflag: boolean = False;
   euler: double = 2.7182818284590452353602874713527;
@@ -114,7 +111,7 @@ implementation
 
 {Cada função da calculadora possui um código de 1 caractere para que o programa interprete-o
 de maneira mais simplificada e para permitir que funções como "arcsin(" possam ser apagadas de
-com apenas 1 backspace, com um código simplificado.
+com apenas 1 backspace.
 A desvantagem desta abordagem é que é necessário traduzir os códigos para inserí-los no display
 da calculadora.
 Apesar de simples e razoavelmente legível, o código do display implementado é ineficiente, já que,
@@ -178,11 +175,13 @@ begin
   tan.Hint := 'i(';
 end;
 
-// Eu chamo quando aperto = (igual)
+{ É chamada quando = (igual) é pressionado
+  O validador da sintaxe é bem permissivo e
+  avalia apenas casos simples}
 function TForm1.CheckString(str: string): boolean;
 var
-  // Parenteses
   C: char;
+  i: integer;
 begin
   if holder = 'z' then
     exit(False);
@@ -192,13 +191,52 @@ begin
     displayerror();
     exit(False);
   end;
-
   for C in str do
   begin
     case C of
+      '.':
+      begin
+        if decimalflag = True then
+        begin
+          displayerror();
+          exit;
+        end;
+        decimalflag := True;
+        continue;
+      end;
+
+      '+', '-', '*', '/', '^':
+      begin
+        if operatorflag = True then
+        begin
+          displayerror();
+          exit;
+        end;
+        operatorflag := True;
+        decimalflag := False;
+      end;
+
+      'd':
+      begin
+        if numberflag = False then
+        begin
+          displayerror();
+          exit;
+        end;
+        operatorflag := True;
+      end;
 
       // Cada abertura de parenteses soma 1
-      '(': par += 1;
+      '(':
+      begin
+
+        if numberflag = True then
+        begin
+          displayerror();
+          exit;
+        end;
+        par += 1;
+      end;
       // Cada fechamento de parenteses subtrai 1
       ')':
       begin
@@ -211,11 +249,11 @@ begin
       end;
 
       else
+        operatorflag := False;
       begin
         if IsNumber(C) = True then
         begin
-          if decimalflag = True then
-            decimalflag := False;
+          numberflag := True;
         end;
       end;
 
@@ -230,27 +268,20 @@ begin
   exit(True);
 end;
 
-procedure TForm1.RecheckString(str: string);
-begin
-  par := 0;
-  numberflag := False;
-  decimalflag := False;
-  operatorflag := False;
-  parflag := False;
-  CheckString(str);
-end;
-
+// Mostrar erro na tela
 procedure TForm1.displayerror();
 begin
   holder := 'z';
   UpdateField();
 end;
 
+// Apagar memória
 procedure TForm1.resetmemory(Sender: TObject);
 begin
   memory := 0;
 end;
 
+// Apagar memória e display
 procedure TForm1.resetmemoryAC(Sender: TObject);
 begin
   resetC(Sender);
@@ -260,9 +291,6 @@ end;
 // Chamo quando aperto =
 procedure TForm1.equalsfunc(Sender: TObject);
 begin
-  if (par <> 0) then
-    displayerror();
-  //answerbool := True;
   if CheckString(holder) then
   begin
     holder := parse();
@@ -289,23 +317,50 @@ begin
   end;
 end;
 
+// Botão m+
 procedure TForm1.memoryadd(Sender: TObject);
 begin
   if IsNumberOnly(holder) then
     memory += StrToFloat(holder);
 end;
 
+// Botão mc
 procedure TForm1.memclrClick(Sender: TObject);
 begin
-  // TODO
+  memory := 0;
 end;
 
+// Botão m-
 procedure TForm1.memorysub(Sender: TObject);
 begin
   if IsNumberOnly(holder) then
     memory -= StrToFloat(holder);
 end;
 
+// Botão mr
+procedure TForm1.memoryrecall(Sender: TObject);
+begin
+  if memory < 0 then
+  begin
+    memory *= -1;
+    if (holder = 'z') or (holder = '0') then
+      holder := '~' + floattostr(memory)
+    else
+      holder += '~' + floattostr(memory);
+
+  end
+  else
+
+  if (holder = 'z') or (holder = '0') then
+    holder := floattostr(memory)
+  else
+    holder += floattostr(memory);
+
+
+  UpdateField();
+end;
+
+// Botões circulares Deg e Rad
 procedure TForm1.radioClick(Sender: TObject);
 begin
   if deg.Checked then
@@ -319,7 +374,6 @@ procedure TForm1.bckspc(Sender: TObject);
 var
   str: string;
 begin
-  answerbool := False;
   str := holder;
   // Caso tenha tamanho 1, define o display para 0
   if LENGTH(str) = 1 then
@@ -360,7 +414,6 @@ end;
 // Botão C
 procedure TForm1.resetC(Sender: TObject);
 begin
-  answerbool := False;
   par := 0;
   numberflag := True;
   decimalflag := False;
@@ -372,7 +425,8 @@ end;
 // Insere o texto do campo Hint do objeto no holder
 procedure TForm1.typetxthint(Sender: TObject);
 begin
-  answerbool := False;
+  if (length(holder) = 255) then
+    exit();
   if (holder = '0') or (holder = 'z') then
   begin
     case TButton(Sender).Hint of
@@ -389,7 +443,8 @@ end;
 // Insere o texto do campo Hint do objeto no holder e desativa o shift
 procedure TForm1.typetxthintshift(Sender: TObject);
 begin
-  answerbool := False;
+  if (length(holder) = 255) then
+    exit();
   if (holder = '0') or (holder = 'z') then
     holder := TButton(Sender).Hint
   else
@@ -399,6 +454,7 @@ begin
 
 end;
 
+// A string contém apenas números e .?
 function TForm1.IsNumberOnly(str: string): boolean;
 var
   C: char;
@@ -414,7 +470,7 @@ end;
 
 
 
-
+// Converter para notação polonesa
 function TForm1.parse(): string;
 var
   pilha: array[1..256] of string;
@@ -426,6 +482,8 @@ var
   parindextop: integer = 0;
   operators: array[1..256] of string;
   operatorstop: integer = 0;
+  aux: double;
+  aux2: double;
 begin
 
   holder := '(' + holder + ')';
@@ -457,6 +515,31 @@ begin
         polish[polindex] := FloatToStr(pii);
       end;
 
+      'f':
+      begin
+        aux := strtofloat(polish[polindex]);
+         {$ASMMODE intel}
+        asm
+                 // TODO: Arrumar código
+                 FINIT
+                 FLD1
+                 FLDZ
+                 MOV   ECX, aux
+
+                 @loop:
+                 FLD1
+                 FADDP ST(1), ST(0)
+                 FMUL  ST(1), ST(0)
+
+                 DEC   ECX
+                 JNZ   @loop
+
+                 FSTP  aux
+                 FSTP  aux2
+        end;
+        polish[polindex] := floattostr(aux2);
+      end;
+
       // ln, log, √x, y√x, sin, cos, tan, arcsin, arccos, arctan
       'a', 'b', 'c', 'd', 'g', 'h', 'i', 'G', 'H', 'I':
       begin
@@ -467,6 +550,7 @@ begin
         i += 2;
         continue;
       end;
+
 
       '(':
       begin
@@ -528,6 +612,7 @@ begin
 
 end;
 
+// Conversão de Grau para Radiano
 procedure TForm1.AssemblyGrau();
 var
   cento: double = 180;
@@ -543,6 +628,7 @@ begin
 
 end;
 
+// Conversão de Radiano para Grau
 procedure TForm1.AssemblyRadiano();
 var
   cento: double = 180;
@@ -558,6 +644,7 @@ begin
 
 end;
 
+// Resolver notação polonesa
 function TForm1.solve(polish: array of string; parlow, parhigh: integer): string;
 var
   i: integer;
@@ -832,6 +919,7 @@ begin
   exit(floattostr(resultado));
 end;
 
+// Armazena a precedência dos operadores
 function TForm1.precedencia(operador: string): byte;
 begin
 
@@ -844,6 +932,7 @@ begin
   end;
 end;
 
+// Calcula várias operações em assembly
 function TForm1.calcular(numb1, numb2: double; operation: string): double;
 begin
   case operation of

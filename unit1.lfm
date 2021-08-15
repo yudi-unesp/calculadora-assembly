@@ -1,5 +1,5 @@
 object Form1: TForm1
-  Left = 428
+  Left = 427
   Height = 219
   Top = 523
   Width = 362
@@ -316,6 +316,7 @@ object Form1: TForm1
     HelpType = htKeyword
     Caption = 'mr'
     Color = clScrollBar
+    OnClick = memoryrecall
     ParentFont = False
     TabOrder = 20
   end
