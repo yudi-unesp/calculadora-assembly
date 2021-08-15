@@ -10,7 +10,7 @@ uses
 type
 
   { TForm1 }
-
+  // GUI
   TForm1 = class(TForm)
     acfunc: TButton;
     backspace: TButton;
@@ -58,6 +58,8 @@ type
     subop: TButton;
     sumop: TButton;
     tan: TButton;
+
+    // Subprogramas
     procedure bckspc(Sender: TObject);
     procedure invert(Sender: TObject);
     procedure memoryrecall(Sender: TObject);
@@ -72,15 +74,15 @@ type
     procedure resetmemory(Sender: TObject);
     procedure UpdateField();
     procedure ShiftOff();
-    function CheckString(str: string): boolean;
     procedure equalsfunc(Sender: TObject);
     procedure displayerror();
+    procedure AssemblyGrau();
+    procedure AssemblyRadiano();
     function IsNumberOnly(str: string): boolean;
     function calcular(numb1, numb2: double; operation: string): double;
     function precedencia(operador: string): byte;
     function solve(polish: array of string; parlow, parhigh: integer): string;
-    procedure AssemblyGrau();
-    procedure AssemblyRadiano();
+    function CheckString(str: string): boolean;
     function parse(): string;
 
   private
@@ -91,15 +93,21 @@ type
 
 var
   Form1: TForm1;
+  // Onde os códigos são armazenados
   holder: string = '0';
+  // O radial Deg está selecionado?
   degrees: integer = 1;
+  // Memória
   memory: double = 0;
+  // Contagem de parênteses
   par: integer = 0;
-  decimalflag: boolean = False;
+  // Flag de operadores e operações
   operatorflag: boolean = False;
+  decimalflag: boolean = False;
+  rootflag: boolean = False;
+  // Constantes
   euler: double = 2.7182818284590452353602874713527;
   pii: double = 3.1415926535897932384626433832795;
-  rootflag: boolean = False;
 
 implementation
 
@@ -540,26 +548,35 @@ end;
 // Converter para notação polonesa
 function TForm1.parse(): string;
 var
+  // Pilha de números
   pilha: array[1..256] of string;
-  str: string;
+  // Notação polonesa
   polish: array[1..256] of string;
   polindex: integer = 0;
-  i: integer = 1;
+  // Pilha de índices de parênteses
   parindex: array[1..256] of integer;
   parindextop: integer = 0;
+  // Pilha de operadores
   operators: array[1..256] of string;
   operatorstop: integer = 0;
+  // Variáveis auxiliares
   aux: double;
   aux2: double;
+  i: integer = 1;
+  str: string;
 begin
-
+  // Envolver o holder entre parênteses
   holder := '(' + holder + ')';
-
+  // Enquanto i for menor que o tamanho do holder
   while i <= length(holder) do
   begin
+    // Avaliar cada caractere
     case holder[i] of
+      // Se o caractere for um número
       '0' .. '9':
       begin
+        // Inclua todos caracteres subsequentes que contenham números ou pontos
+        // num mesmo item da pilha polish
         polindex += 1;
         polish[polindex] := '';
         while (IsNumber(holder[i])) or (holder[i] = '.') do
@@ -570,20 +587,23 @@ begin
         continue;
       end;
 
+      // Se for o caractere for "e", incluir o número de euler na pilha polish
       'e':
       begin
         polindex += 1;
         polish[polindex] := FloatToStr(euler);
       end;
-
+      // Se for o caractere for "j", incluir pi na pilha polish
       'j':
       begin
         polindex += 1;
         polish[polindex] := FloatToStr(pii);
       end;
 
+      // Se for fatorial
       'f':
       begin
+        // Execute a operação no último número da pilha polish
         aux := strtofloat(polish[polindex]);
          {$ASMMODE intel}
         asm
@@ -604,6 +624,7 @@ begin
                  FSTP  aux
                  FSTP  aux2
         end;
+        // E substitua-o pelo resultado
         polish[polindex] := floattostr(aux2);
       end;
 
@@ -612,15 +633,18 @@ begin
       begin
         polindex += 1;
         parindextop += 1;
+        // Inserir o item "x(" na pilha polish
         polish[polindex] := holder[i] + '(';
         parindex[parindextop] := polindex;
+        // Pular o parêntese subsequente no holder
         i += 2;
         continue;
       end;
 
-
+      // Se for a abertura de um parêntese
       '(':
       begin
+        // Inserir na pilha polish, parindex e operators
         polindex += 1;
         parindextop += 1;
         operatorstop += 1;
@@ -630,20 +654,27 @@ begin
 
       end;
 
+      // Se for o fechamento de um parêntese
       ')':
       begin
+        // Enquanto o elemento do topo da pilha não for um (
         while (operatorstop > 0) and (operators[operatorstop] <> '(') do
         begin
+          // Remove os operadores da pilha de operadores
           polindex += 1;
           polish[polindex] := operators[operatorstop];
           operatorstop -= 1;
         end;
+        // Remove o (
         operatorstop -= 1;
+        // Calcula as operações e coloca no lugar do ( removido acima
         polish[parindex[parindextop]] :=
           solve(polish, parindex[parindextop], polindex);
         polindex := parindex[parindextop];
+        // Caso tenha havido uma operação y√x
         if rootflag = True then
         begin
+          // Colocar o resultado no lugar do y ao invés do ( removido acima
           polish[polindex - 1] := polish[polindex];
           polindex -= 1;
           rootflag := False;
@@ -652,25 +683,33 @@ begin
         parindextop -= 1;
 
       end;
+        // Qualquer outra coisa (operador)
       else
       begin
-
+        // Se não houver operadores, não comparar precedência, apenas inserir
         if operatorstop = 0 then
         begin
           operatorstop := 1;
           operators[operatorstop] := holder[i];
         end
+        // Se houver algum operador
         else
         begin
-
+          // Se a precência do operador a ser inserido for menor ou igual
+          // a precedência do operador no topo da pilha
           if precedencia(holder[i]) <= precedencia(operators[operatorstop]) then
           begin
+            // Colocar o operador do topo da pilha na pilha polish e
+            // mover o operador a ser inserido para o topo da pilha
+            // de operadores
             polindex += 1;
             polish[polindex] := operators[operatorstop];
             operators[operatorstop] := holder[i];
           end
+          // Senão
           else
           begin
+            // Insira o operador no topo da pilha de operadores
             operatorstop += 1;
             operators[operatorstop] := holder[i];
           end;
@@ -682,6 +721,7 @@ begin
     end;
     i += 1;
   end;
+  // Retornar resultado
   exit(polish[1]);
 
 end;
@@ -689,7 +729,7 @@ end;
 // Conversão de Grau para Radiano
 procedure TForm1.AssemblyGrau();
 var
-  cento: double = 180;
+  centoeoitenta: double = 180;
 begin
 
    {$ASMMODE intel}
@@ -705,7 +745,7 @@ end;
 // Conversão de Radiano para Grau
 procedure TForm1.AssemblyRadiano();
 var
-  cento: double = 180;
+  centoeoitenta: double = 180;
 begin
 
    {$ASMMODE intel}
@@ -721,30 +761,38 @@ end;
 // Resolver notação polonesa
 function TForm1.solve(polish: array of string; parlow, parhigh: integer): string;
 var
-  i: integer;
+  // Pilha de operandos em formato double
+  // A pilha polish é um array de strings
   pilha: array[1..256] of double;
   pilhatop: integer = 0;
-  resultado: double;
-  radianss: integer;
+
+  // Variáveis auxiliares
   aux: double;
+  i: integer;
+  radianss: integer; // Para não dar erro na compilação
+  resultado: double;
 begin
   i := parlow;
   radianss := degrees;
+
   while i < parhigh do
   begin
     case polish[i] of
+      // Se for negação
       '~':
       begin
+        // Inverta o sinal do número no topo da pilha
         pilha[pilhatop] := pilha[pilhatop] * -1;
       end;
-
+      // Se for um operador primário
       '^', '*', '/', '+', '-':
       begin
+        // Calcule e armazene na pilha
         pilha[pilhatop - 1] :=
           calcular(pilha[pilhatop - 1], pilha[pilhatop], polish[i]);
         pilhatop -= 1;
       end;
-
+      // Se for uma operação ou parêntese, ignore
       '(', 'a(', 'b(', 'c(', 'd(', 'g(', 'h(', 'i(', 'j(', 'G(', 'H(', 'I(':
       begin
         i += 1;
@@ -752,7 +800,9 @@ begin
       end
 
       else
+        // Se for qualquer outra coisa (número)
       begin
+        // Converta para float e armazene na pilha
         pilhatop += 1;
         pilha[pilhatop] := strtofloat(polish[i]);
       end;
@@ -761,8 +811,10 @@ begin
     i += 1;
   end;
 
+  // Resultado provisório, pode mudar no case abaixo
   resultado := pilha[1];
 
+  // Se houver alguma operação junto ao parêntese inicial, faça-a
   case polish[parlow - 1] of
     // 'a', 'b', 'c', 'g', 'h', 'i', 'j', 'H', 'I', 'J':
     // ln, log, √x, y√x, sin, cos, tan, arcsin, arccos, arctan
@@ -845,7 +897,7 @@ begin
                FLD1
                FADD
                FSCALE
-               FSTP  resultado // Resultado armazenado no topo da pilha
+               FSTP  resultado
       end;
     end;
 
@@ -990,13 +1042,21 @@ begin
     end;
   end;
 
-
+  // Retornar resultado definitivo
   exit(floattostr(resultado));
 end;
 
 // Armazena a precedência dos operadores
 function TForm1.precedencia(operador: string): byte;
 begin
+
+  {
+   6. ~
+   5. ^
+   4. *, /
+   3. +, -
+   2. (
+   }
 
   case operador of
     '~': exit(6);
@@ -1007,7 +1067,9 @@ begin
   end;
 end;
 
-// Calcula várias operações em assembly
+// Calcula várias operações em assembly, reduzindo o tamanho da outra função
+// Diferente do case com as operações, esta parte pode ser modularizada com maior facilidade
+// Já que depende de poucos parâmetros
 function TForm1.calcular(numb1, numb2: double; operation: string): double;
 begin
   case operation of
