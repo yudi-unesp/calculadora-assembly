@@ -820,15 +820,16 @@ begin
       aux := euler;
        {$ASMMODE intel}
       asm
-               FINIT
-               FLD1
-               FLD   aux
-               FYL2X
-               FLD1
+               FINIT      // Inicializa a FPU e sua pilha
+               FLD1       // Carrega 1 no topo da pilha
+               FLD   aux  // Carrega o valor de euler
+               FYL2X      // Computa aux * log2(x)
+               FLD1       // Carrega 1 no topo da pilha
                FDIV  ST, ST(1)
-               FLD   resultado
-               FYL2X
-               FSTP  resultado
+               // Divide o o valor na posição 2 pelo topo da pilh na ordem posterior/topo
+               FLD   resultado  // Carrega o resultado
+               FYL2X            // Computa resultado * log2(x)
+               FSTP  resultado  // Retorna o resultado na pilha
       end;
     end;
 
@@ -840,15 +841,16 @@ begin
       aux := 10;
        {$ASMMODE intel}
       asm
-               FINIT
-               FLD1
-               FLD   aux
-               FYL2X
-               FLD1
+               FINIT     // Inicializa a FPU e sua pilha
+               FLD1      // Carrega 1 na pilha
+               FLD   aux // Carrega o valor de aux no topo da pilha
+               FYL2X     // Computa aux * log2(x)
+               FLD1      // Carrega 1 na pilha
                FDIV  ST, ST(1)
-               FLD   resultado
-               FYL2X
-               FSTP  resultado
+               // Divide o valor na posição 2 pelo topo da pilh na ordem posterior/topo
+               FLD   resultado // Carrega o resultado no topo da pilha
+               FYL2X           // Computa resultado * log2(x)
+               FSTP  resultado // Retorna o resultado na pilha
       end;
     end;
 
@@ -858,9 +860,10 @@ begin
     begin
  {$ASMMODE intel}
       asm
-               FLD   resultado
-               FSQRT
-               FSTP  resultado
+               FINIT // Inicializa a FPU e sua pilha
+               FLD   resultado  // Carrega a entrada
+               FSQRT            // Computa a raiz quadrada da entrada no topo da pilha
+               FSTP  resultado  // Retorna o resultado na pilha
       end;
     end;
 
@@ -872,26 +875,27 @@ begin
       rootflag := True;
            {$ASMMODE intel}
       asm
-               FINIT
-               FLD1
-               FLD   aux
-               FDIV
-               FSTP  aux
-               FINIT  // Segunda inicialização para evitar lixo de memória
-               FLD   aux
-               FLD1
-               FLD   resultado
-               FYL2X
-               FMUL
-               FLD   ST
-               FRNDINT
+               FINIT     // Inicializa a FPU e sua pilha
+               FLD1      // Carrega 1 no topo da pilha
+               FLD   aux // Carrega valor da pilha polonesa
+               FDIV      // Divide as duas primeiras posições na pilha, e armazena no topo
+               FSTP  aux // Armazena o resultado em aux
+               FINIT     // Segunda inicialização para evitar lixo de memória
+               FLD   aux // Carrega o resultado anterior no topo da pilha
+               FLD1      // Carrega 1 no topo da pilha
+               FLD   resultado // Carrega o resultado
+               FYL2X     // Computa resultado * log2(x)
+               FMUL      // Multiplica as duuas primeiras posições da pilha, e salva no topo
+               FLD   ST  // Copia o topo e carrega-o no topo da pilha
+               FRNDINT   // Arredonda para o inteiro mais próximo
                FSUB  ST(1), ST
-               FXCH
-               F2XM1
-               FLD1
-               FADD
-               FSCALE
-               FSTP  resultado
+               // Subtrai as duas primeiras posições da pilha, e salva na segunda
+               FXCH       // Troca o valor das duas primeiras posições da pilha
+               F2XM1      // Computa 2x - 1
+               FLD1       // Carrega 1 no topo da pilha
+               FADD       // Soma os dois valores no topo da pilha e armazena no topo
+               FSCALE     // Adicione o valor inteiro em ST(1) para o expoente de ST
+               FSTP  resultado  // Retorna o resultado na pilha
       end;
     end;
 
@@ -901,20 +905,20 @@ begin
     begin
       {$ASMMODE intel}
       asm
-               FINIT
-               FLD   resultado
-               MOV   EAX, radianss
-               SUB   EAX, 1
-               JZ    @GRAU
-               JMP   @RADIANO
+               FINIT  // Inicializa a FPU e sua pilha
+               FLD   resultado // Carrega a entrada no topo da pilha
+               MOV   EAX, radianss // Salva os graus
+               SUB   EAX, 1        // Subtrai os graus por 1
+               JZ    @GRAU         // Caso zero, converta para grau
+               JMP   @RADIANO      // Senão, siga com as operações
 
-               @GRAU:
+               @GRAU:              // Realiza as operações de conversão
                CALL  AssemblyGrau
                JMP   @RADIANO
 
                @RADIANO:
-               FSIN
-               FSTP  resultado
+               FSIN              // Calcula o seno da entrada
+               FSTP  resultado   // Retorna o resultado na pilha
       end;
     end;
 
@@ -924,20 +928,20 @@ begin
     begin
       {$ASMMODE intel}
       asm
-               FINIT
-               FLD   resultado
-               MOV   EAX, radianss
-               SUB   EAX, 1
-               JZ    @GRAU
-               JMP   @RADIANO
+               FINIT  // Inicializa a FPU e sua pilha
+               FLD   resultado  // Carrega a entrada no topo da pilha
+               MOV   EAX, radianss  // Salva os graus
+               SUB   EAX, 1         // Subtrai os graus por 1
+               JZ    @GRAU          // Caso zero, converta para grau
+               JMP   @RADIANO       // Senão, siga com as operações
 
                @GRAU:
-               CALL  AssemblyGrau
+               CALL  AssemblyGrau   // Realiza as operações de conversão
                JMP   @RADIANO
 
                @RADIANO:
-               FCOS
-               FSTP  resultado
+               FCOS             // Calcula o cosseno da entrada
+               FSTP  resultado  // Retorna o resultado na pilha
       end;
     end;
 
@@ -947,21 +951,21 @@ begin
     begin
       {$ASMMODE intel}
       asm
-               FINIT
-               FLD   resultado
-               MOV   EAX, radianss
-               SUB   EAX, 1
-               JZ    @GRAU
-               JMP   @RADIANO
+               FINIT // Inicializa a FPU e sua pilha
+               FLD   resultado  // Carrega a entrada no topo da pilha
+               MOV   EAX, radianss  // Salva os graus
+               SUB   EAX, 1         // Subtrai os graus por 1
+               JZ    @GRAU          // Caso zero, converta para grau
+               JMP   @RADIANO       // Senão, siga com as operações
 
                @GRAU:
-               CALL  AssemblyGrau
+               CALL  AssemblyGrau   // Realiza as operações de conversão
                JMP   @RADIANO
 
                @RADIANO:
                FSINCOS
-               FDIVP ST(1), ST(0)
-               FSTP  resultado
+               FDIVP ST(1), ST(0) // Calcula a tangente da entrada
+               FSTP  resultado    // Retorna o resultado na pilha
       end;
     end;
 
@@ -971,30 +975,34 @@ begin
     begin
          {$ASMMODE intel}
       asm
-               FINIT
-               FLD   resultado
-               FLD   resultado
+               FINIT   // Inicializa a FPU e sua pilha
+               FLD   resultado  // Carrega a entrada no topo da pilha
+               FLD   resultado  // Copia a entrada e armazena-a no topo da pilha
                FMULP ST(1), ST(0)
-               FLD1
+               // Multiplica as duas primeiras posições da pilha, e salva na segunda
+               FLD1              // Carrega 1 no topo da pilha
                FLD   ST(1)
+               // Copia o resultado da multiplicação para o topo da pilha
                FSUBP ST(1), ST(0)
+               // Subtrai as duas primeiras posições da pilha, e salva na segunda
                FDIVP ST(1), ST(0)
+               // Divide as duas primeiras posições da pilha, e salva na segunda
 
-               FSQRT
-               FLD1
-               FPATAN
+               FSQRT             // Computa a raiz quadrada do topo
+               FLD1              // Carrega 1 no topo
+               FPATAN            // arctan
 
-               MOV   EAX, radianss
-               SUB   EAX, 1
-               JZ    @GRAU
-               JMP   @RADIANO
+               MOV   EAX, radianss // Carrega o estado
+               SUB   EAX, 1        // Subtrai 1 dos estado
+               JZ    @GRAU         // Caso zero, converta para grau
+               JMP   @RADIANO      // Senão, siga com as operações
 
-               @GRAU:
+               @GRAU:              // Realiza as operações de conversão
                CALL  AssemblyRadiano
                JMP   @RADIANO
 
                @RADIANO:
-               FST   resultado
+               FST   resultado    // Retorna o resultado na pilha
       end;
 
     end;
@@ -1005,21 +1013,21 @@ begin
     begin
           {$ASMMODE intel}
       asm
-               FINIT
-               FLD     resultado
-               FLD     resultado
-               FMULP   ST(1), ST(0)
-               FLD1
-               FLD     ST(1)
-               FSUBP   ST(1), ST(0)
-               FXCH
-               FDIVP   ST(1), ST(0)
+               FINIT   // Inicializa a FPU e sua pilha
+               FLD     resultado // Resultado
+               FLD     resultado // Duplicar resultado
+               FMULP   ST(1), ST(0) // resultado^2
+               FLD1    // Incremento
+               FLD     ST(1) // Duplicar
+               FSUBP   ST(1), ST(0) // 1-X^2
+               FXCH    // Swap
+               FDIVP   ST(1), ST(0) // (1-x^2)/x^2
 
-               FSQRT
-               FLD1
-               FPATAN
+               FSQRT  // sqrt((1-x^2)/x^2))
+               FLD1   // Incremento
+               FPATAN // arctan
 
-               MOV   EAX, radianss
+               MOV   EAX, radianss // Conversão
                SUB   EAX, 1
                JZ    @GRAU
                JMP   @RADIANO
@@ -1029,7 +1037,7 @@ begin
                JMP   @RADIANO
 
                @RADIANO:
-               FST   resultado
+               FST   resultado   // Retorna o resultado na pilha
 
       end;
 
@@ -1042,21 +1050,21 @@ begin
           {$ASMMODE intel}
       asm
 
-               FINIT
-               FLD   resultado
-               FLD1
-               FPATAN
-               MOV   EAX, radianss
-               SUB   EAX, 1
-               JZ    @GRAU
-               JMP   @RADIANO
+               FINIT  // Inicializa a FPU e sua pilha
+               FLD   resultado  // Carrega a entrada no topo da pilha
+               FLD1             // Carrega 1 no topo da pilha
+               FPATAN           // arctan
+               MOV   EAX, radianss  // Carrega o estado
+               SUB   EAX, 1         // Subtrai 1 do estado
+               JZ    @GRAU          // Caso zero, converta para grau
+               JMP   @RADIANO       // Senão, siga com as operações
 
-               @GRAU:
+               @GRAU:                // Realiza as operações de conversão
                CALL  AssemblyRadiano
                JMP   @RADIANO
 
                @RADIANO:
-               FST   resultado
+               FST   resultado   // Retorna o resultado na pilha
       end;
     end;
   end;
@@ -1096,11 +1104,12 @@ begin
     begin
   {$ASMMODE intel}
       asm
-               FINIT
-               FLD   numb1
-               FLD   numb2
+               FINIT // Inicializa a FPU e sua pilha
+               FLD   numb1  // Carrega o primeiro operando
+               FLD   numb2  // Carrega o segundo operando
                FADDP ST(1),ST(0)
-               FSTP  result
+               // Soma os operandos e salva na segunda posição e remove o topo
+               FSTP  result  // Retorna o resultado na pilha
       end;
     end;
 
@@ -1108,11 +1117,12 @@ begin
     begin
     {$ASMMODE intel}
       asm
-               FINIT
+               FINIT  // Inicializa a FPU e sua pilha
                FLD   numb1
                FLD   numb2
                FSUBP ST(1), ST(0)
-               FSTP  result
+               // Subtrai os operandos e salva na segunda posição e remove o topo
+               FSTP  result // Retorna o resultado na pilha
       end;
     end;
 
@@ -1120,11 +1130,12 @@ begin
     begin
   {$ASMMODE intel}
       asm
-               FINIT
+               FINIT // Inicializa a FPU e sua pilha
                FLD   numb1
                FLD   numb2
                FMULP ST(1), ST(0)
-               FSTP  result
+               // Multiplica os operandos e salva na segunda posição e remove o topo
+               FSTP  result    // Retorna o resultado na pilha
       end;
     end;
 
@@ -1132,11 +1143,12 @@ begin
     begin
   {$ASMMODE intel}
       asm
-               FINIT
+               FINIT // Inicializa a FPU e sua pilha
                FLD   numb1
                FLD   numb2
                FDIVP ST(1), ST(0)
-               FSTP  result
+               // Diviide os operandos e salva na segunda posição e remove o topo
+               FSTP  result  // Retorna o resultado na pilha
       end;
     end;
 
@@ -1144,21 +1156,22 @@ begin
     begin
   {$ASMMODE intel}
       asm
-               FINIT
-               FLD   numb2
-               FLD1
-               FLD   numb1
-               FYL2X
-               FMUL  numb2
-               FLD   ST
-               FRNDINT
+               FINIT   // Inicializa a FPU e sua pilha
+               FLD   numb2 // Carrega o expoente da potência
+               FLD1        // Carrega 1 no topo
+               FLD   numb1 // Carrega o operando
+               FYL2X       // Computa entrada * log2(x)
+               FMUL  numb2 // Multiplica pelo expoente
+               FLD   ST    // Copia o topo e carrega-o na pilha
+               FRNDINT     // Arredonda para o inteiro mais próximo
                FSUB  ST(1), ST
-               FXCH
-               F2XM1
-               FLD1
-               FADD
-               FSCALE
-               FSTP  result
+               // Subtrai o expoente e salva na segunda posição e remove o topo
+               FXCH        // Troca o valor das duas primeiras posições da pilha
+               F2XM1       // Computa 2x - 1
+               FLD1        // Carrega 1 no topo da pilha
+               FADD        // Soma o resultado e 1, salva no topo
+               FSCALE      // Adicione o valor inteiro em ST(1) para o expoente de ST
+               FSTP  result  // Retorna o resultado na pilha
       end;
     end;
   end;
