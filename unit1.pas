@@ -99,11 +99,7 @@ var
   degrees: integer = 1;
   // Memória
   memory: double = 0;
-  // Contagem de parênteses
-  par: integer = 0;
-  // Flag de operadores e operações
-  operatorflag: boolean = False;
-  decimalflag: boolean = False;
+  // Flag de operação
   rootflag: boolean = False;
   // Constantes
   euler: double = 2.7182818284590452353602874713527;
@@ -208,6 +204,10 @@ function TForm1.CheckString(str: string): boolean;
 var
   C: char;
   i: integer = 1;
+  // Flag de decimal
+  decimalflag: boolean = False;
+  // Contagem de parênteses
+  par: integer = 0;
 begin
   // Se houver um erro no holder, saia
   if holder = 'z' then
@@ -440,7 +440,6 @@ begin
     degrees := 0;
 end;
 
-
 // Apaga
 procedure TForm1.bckspc(Sender: TObject);
 var
@@ -486,13 +485,10 @@ begin
   UpdateField();
 end;
 
-
 // Botão C - Clear
 // Limpa o holder
 procedure TForm1.resetC(Sender: TObject);
 begin
-  par := 0;
-  decimalflag := False;
   holder := '0';
   UpdateField();
 end;
@@ -502,7 +498,7 @@ procedure TForm1.typetxthint(Sender: TObject);
 begin
   if (length(holder) = 255) then
     exit();
-  if (holder = '0') or (holder = 'z') then
+  if ((holder = '0') or (holder = 'z')) AND (TButton(Sender).Hint <> '.') then
   begin
     case TButton(Sender).Hint of
       '+', '-', '*', '/', 'f', 'd(': holder := Concat('0', TButton(Sender).Hint);
@@ -542,8 +538,6 @@ begin
   end;
   exit(True);
 end;
-
-
 
 // Converter para notação polonesa
 function TForm1.parse(): string;
@@ -736,7 +730,7 @@ begin
   asm
            FLDPI
            FMULP   ST(1), ST(0)
-           FLD     cento
+           FLD     centoeoitenta
            FDIVP   ST(1), ST(0)
   end;
 
@@ -750,7 +744,7 @@ begin
 
    {$ASMMODE intel}
   asm
-           FLD     cento
+           FLD     centoeoitenta
            FMULP   ST(1), ST(0)
            FLDPI
            FDIVP   ST(1), ST(0)
