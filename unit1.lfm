@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 0
+  Left = 428
   Height = 219
-  Top = 23
+  Top = 523
   Width = 362
   Caption = 'Form1'
   ClientHeight = 219
@@ -32,6 +32,7 @@ object Form1: TForm1
       AutoSize = False
       Caption = 'Deg'
       Checked = True
+      OnClick = radioClick
       TabOrder = 0
       TabStop = True
     end
@@ -42,6 +43,7 @@ object Form1: TForm1
       Width = 44
       Anchors = [akTop]
       Caption = 'Rad'
+      OnClick = radioClick
       TabOrder = 1
     end
   end

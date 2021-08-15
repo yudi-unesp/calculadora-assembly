@@ -75,6 +75,12 @@ type
     procedure equalsfunc(Sender: TObject);
     procedure displayerror();
     function IsNumberOnly(str: string): boolean;
+    function calcular(numb1, numb2: double; operation: string): double;
+    function precedencia(operador: string): byte;
+    function solve(polish: array of string; parlow, parhigh: integer): string;
+    procedure AssemblyGrau();
+    procedure AssemblyRadiano();
+    function parse(): string;
 
   private
 
@@ -85,9 +91,9 @@ type
 var
   Form1: TForm1;
   holder: string = '0';
-  degrees: boolean = True;
-  memory: extended = 0;
-  answer: extended;
+  degrees: shortint = 1;
+  memory: double = 0;
+  answer: double;
   answerbool: boolean = False;
   par: integer = 0;
   numberflag: boolean = True;
@@ -96,6 +102,9 @@ var
   parflag: boolean = False;
   startopflag: boolean = False;
   endopflag: boolean = False;
+  reqnumberflag: boolean = False;
+  euler: double = 2.7182818284590452353602874713527;
+  pii: double = 3.1415926535897932384626433832795;
 
 implementation
 
@@ -169,96 +178,54 @@ begin
   tan.Hint := 'i(';
 end;
 
-// Eu chamo quando aperto as teclas na calculadora
+// Eu chamo quando aperto = (igual)
 function TForm1.CheckString(str: string): boolean;
 var
   // Parenteses
   C: char;
 begin
+  if holder = 'z' then
+    exit(False);
+
+  if holder[1] in ['+', '-', '*', '/', 'f', 'd'] then
+  begin
+    displayerror();
+    exit(False);
+  end;
 
   for C in str do
   begin
     case C of
 
-      '(':
-      begin
-        if ((numberflag = True) or (parflag = True)) and not (holder = '0') then
-          exit(False);
-        par += 1;
-        operatorflag := False;
-        numberflag := False;
-      end;
-
+      // Cada abertura de parenteses soma 1
+      '(': par += 1;
+      // Cada fechamento de parenteses subtrai 1
       ')':
       begin
-        if (par <= 0) or (operatorflag = True) or
-          ((decimalflag = True) and (numberflag = False)) then
-          exit(False);
-        parflag := True;
         par -= 1;
-      end;
-
-      '.':
-      begin
-        if (decimalflag = True) or (numberflag = False) then
-          exit(False);
-        decimalflag := True;
-        numberflag := False;
-      end;
-
-      // Fatorial
-      'f':
-      begin
-        if (numberflag = False) or (decimalflag = True) then
-          exit(False);
-        numberflag := false;
-        decimalflag := false;
-      end;
-
-      'e', 'j':
-      begin
-        if ((numberflag = True) AND (holder <> '0')) or (parflag = True) or (decimalflag = True) then
-          exit(False);
-      end;
-
-      // ln, log, √x,
-      'a', 'b', 'c':
-      begin
-        if numberflag = True and not (holder = '0') then
-          exit(False);
-        numberflag := False;
-      end;
-
-      '+', '-', '*', '/':
-      begin
-        if (operatorflag = True) or ((numberflag = False) and (decimalflag = True)) then
-          exit(False);
-        operatorflag := True;
-        decimalflag := False;
-        numberflag := False;
-        parflag := False;
+        if par < 0 then
+        begin
+          displayerror();
+          exit;
+        end;
       end;
 
       else
       begin
-        // 1/x
-        if str = '1/(' then
+        if IsNumber(C) = True then
         begin
-          if numberflag = True then
-            exit(False);
+          if decimalflag = True then
+            decimalflag := False;
         end;
-
-
-        if (IsNumber(C) = True) then
-        begin
-          if parflag = True then
-            exit(False);
-          operatorflag := False;
-          numberflag := True;
-        end;
-
       end;
+
     end;
+  end;
+  // Se parenteses for ≠ 0,
+  if (par <> 0) or (decimalflag = True) or (operatorflag = True) then
+  begin
+    displayerror();
+    exit(False);
   end;
   exit(True);
 end;
@@ -296,6 +263,11 @@ begin
   if (par <> 0) then
     displayerror();
   //answerbool := True;
+  if CheckString(holder) then
+  begin
+    holder := parse();
+    UpdateField();
+  end;
 end;
 
 // Botão 2nd na interface. Shift para as funções sin, cos e tan
@@ -337,9 +309,9 @@ end;
 procedure TForm1.radioClick(Sender: TObject);
 begin
   if deg.Checked then
-    degrees := True
+    degrees := 1
   else
-    degrees := False;
+    degrees := 0;
 end;
 
 // Apaga
@@ -359,7 +331,7 @@ begin
     SetLength(str, LENGTH(str) - 1);
     // Se o último caractere for uma letra, com base na tabela ASCII E não for J (pi)
     if (Ord(str[LENGTH(str)]) < 40) or (Ord(str[LENGTH(str)]) > 57) and not
-      (str[LENGTH(str)] = 'j') then
+      (str[LENGTH(str)] in ['f', 'j']) then
     begin
       // Caso o holder tenha tamanho 1, define o display para 0
       if LENGTH(str) = 1 then
@@ -382,7 +354,6 @@ begin
     end;
   end;
   holder := str;
-  RecheckString(holder);
   UpdateField();
 end;
 
@@ -401,13 +372,11 @@ end;
 // Insere o texto do campo Hint do objeto no holder
 procedure TForm1.typetxthint(Sender: TObject);
 begin
-  if not CheckString(TButton(Sender).Hint) then
-    exit;
   answerbool := False;
   if (holder = '0') or (holder = 'z') then
   begin
     case TButton(Sender).Hint of
-      '+', '-', '*', '/', 'f': holder := Concat('0', TButton(Sender).Hint);
+      '+', '-', '*', '/', 'f', 'd(': holder := Concat('0', TButton(Sender).Hint);
       else
         holder := TButton(Sender).Hint;
     end;
@@ -420,8 +389,6 @@ end;
 // Insere o texto do campo Hint do objeto no holder e desativa o shift
 procedure TForm1.typetxthintshift(Sender: TObject);
 begin
-  if not CheckString(TButton(Sender).Hint) then
-    exit;
   answerbool := False;
   if (holder = '0') or (holder = 'z') then
     holder := TButton(Sender).Hint
@@ -438,12 +405,518 @@ var
 begin
   for C in str do
   begin
-    if not (IsNumber(C)) AND (C <> '.')  then
+    if not (IsNumber(C)) and (C <> '.') then
       exit(False);
 
   end;
   exit(True);
 end;
 
+
+
+
+function TForm1.parse(): string;
+var
+  pilha: array[1..256] of string;
+  str: string;
+  polish: array[1..256] of string;
+  polindex: integer = 0;
+  i: integer = 1;
+  parindex: array[1..256] of integer;
+  parindextop: integer = 0;
+  operators: array[1..256] of string;
+  operatorstop: integer = 0;
+begin
+
+  holder := '(' + holder + ')';
+
+  while i <= length(holder) do
+  begin
+    case holder[i] of
+      '0' .. '9', '.':
+      begin
+        polindex += 1;
+        polish[polindex] := '';
+        while (IsNumber(holder[i])) and (holder[i] <> '.') do
+        begin
+          polish[polindex] += holder[i];
+          i += 1;
+        end;
+        continue;
+      end;
+
+      'e':
+      begin
+        polindex += 1;
+        polish[polindex] := FloatToStr(euler);
+      end;
+
+      'j':
+      begin
+        polindex += 1;
+        polish[polindex] := FloatToStr(pii);
+      end;
+
+      // ln, log, √x, y√x, sin, cos, tan, arcsin, arccos, arctan
+      'a', 'b', 'c', 'd', 'g', 'h', 'i', 'G', 'H', 'I':
+      begin
+        polindex += 1;
+        parindextop += 1;
+        polish[polindex] := holder[i] + '(';
+        parindex[parindextop] := polindex;
+        i += 2;
+        continue;
+      end;
+
+      '(':
+      begin
+        polindex += 1;
+        parindextop += 1;
+        operatorstop += 1;
+        polish[polindex] := '(';
+        parindex[parindextop] := polindex;
+        operators[operatorstop] := '(';
+
+      end;
+
+      ')':
+      begin
+        while (operatorstop > 0) and (operators[operatorstop] <> '(') do
+        begin
+          polindex += 1;
+          polish[polindex] := operators[operatorstop];
+          operatorstop -= 1;
+        end;
+        operatorstop -= 1;
+        polish[parindex[parindextop]] :=
+          solve(polish, parindex[parindextop], polindex);
+        polindex := parindex[parindextop];
+        parindextop -= 1;
+
+      end;
+      else
+      begin
+
+        if operatorstop = 0 then
+        begin
+          operatorstop := 1;
+          operators[operatorstop] := holder[i];
+        end
+        else
+        begin
+
+          if precedencia(holder[i]) <= precedencia(operators[operatorstop]) then
+          begin
+            polindex += 1;
+            polish[polindex] := operators[operatorstop];
+            operators[operatorstop] := holder[i];
+          end
+          else
+          begin
+            operatorstop += 1;
+            operators[operatorstop] := holder[i];
+          end;
+
+        end;
+
+      end;
+
+    end;
+    i += 1;
+  end;
+  exit(polish[1]);
+
+end;
+
+procedure TForm1.AssemblyGrau();
+var
+  cento: double = 180;
+begin
+
+   {$ASMMODE intel}
+  asm
+           FLDPI
+           FMULP   ST(1), ST(0)
+           FLD     cento
+           FDIVP   ST(1), ST(0)
+  end;
+
+end;
+
+procedure TForm1.AssemblyRadiano();
+var
+  cento: double = 180;
+begin
+
+   {$ASMMODE intel}
+  asm
+           FLD     cento
+           FMULP   ST(1), ST(0)
+           FLDPI
+           FDIVP   ST(1), ST(0)
+  end;
+
+end;
+
+function TForm1.solve(polish: array of string; parlow, parhigh: integer): string;
+var
+  i: integer;
+  pilha: array[1..256] of double;
+  pilhatop: integer = 0;
+  resultado: double;
+  radianss: shortint;
+  aux: double;
+begin
+  i := parlow;
+  radianss := degrees;
+  while i < parhigh do
+  begin
+    case polish[i] of
+      '~':
+      begin
+        pilha[pilhatop] := pilha[pilhatop] * -1;
+      end;
+
+      '^', '*', '/', '+', '-':
+      begin
+        pilha[pilhatop - 1] :=
+          calcular(pilha[pilhatop - 1], pilha[pilhatop], polish[i]);
+        pilhatop -= 1;
+      end;
+
+      '(', 'a(', 'b(', 'c(', 'd(', 'g(', 'h(', 'i(', 'j(', 'G(', 'H(', 'I(':
+      begin
+        i += 1;
+        continue;
+      end
+
+      else
+      begin
+        pilhatop += 1;
+        pilha[pilhatop] := strtofloat(polish[i]);
+      end;
+
+    end;
+    i += 1;
+  end;
+
+  resultado := pilha[1];
+
+  case polish[parlow - 1] of
+    // 'a', 'b', 'c', 'g', 'h', 'i', 'j', 'H', 'I', 'J':
+    // ln, log, √x, y√x, sin, cos, tan, arcsin, arccos, arctan
+
+
+    // ln
+    'a(':
+    begin
+      aux := euler;
+       {$ASMMODE intel}
+      asm
+               FINIT
+               FLD1
+               FLD   aux
+               FYL2X
+               FLD1
+               FDIV  ST, ST(1)
+               FLD   resultado
+               FYL2X
+               FSTP  resultado
+      end;
+    end;
+
+
+    // log
+    'b(':
+
+    begin
+      aux := 10;
+       {$ASMMODE intel}
+      asm
+               FINIT
+               FLD1
+               FLD   aux
+               FYL2X
+               FLD1
+               FDIV  ST, ST(1)
+               FLD   resultado
+               FYL2X
+               FSTP  resultado
+      end;
+    end;
+
+
+    // √x
+    'c(':
+    begin
+ {$ASMMODE intel}
+      asm
+               FLD   resultado
+               FSQRT
+               FSTP  resultado
+      end;
+    end;
+
+
+    // y√x
+    'd(':
+    begin
+      aux := strtofloat(polish[parlow - 2]);
+           {$ASMMODE intel}
+      asm
+               FINIT
+               FLD1
+               FLD   aux
+               FDIV
+               FSTP  aux
+               FINIT  // Segunda inicialização para evitar lixo de memória
+               FLD   aux
+               FLD1
+               FLD   resultado
+               FYL2X
+               FMUL
+               FLD   ST
+               FRNDINT
+               FSUB  ST(1), ST
+               FXCH
+               F2XM1
+               FLD1
+               FADD
+               FSCALE
+               FSTP  resultado // Resultado armazenado no topo da pilha
+      end;
+    end;
+
+
+    // sin
+    'g(':
+    begin
+      {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   resultado
+               MOV   EAX, radianss
+               SUB   EAX, 1
+               JZ    @GRAU
+               JMP   @RADIANO
+
+               @GRAU:
+               CALL  AssemblyGrau
+               JMP   @RADIANO
+
+               @RADIANO:
+               FSIN
+               FSTP  resultado
+      end;
+    end;
+
+
+    // cos
+    'h(':
+    begin
+      {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   resultado
+               MOV   EAX, radianss
+               SUB   EAX, 1
+               JZ    @GRAU
+               JMP   @RADIANO
+
+               @GRAU:
+               CALL  AssemblyGrau
+               JMP   @RADIANO
+
+               @RADIANO:
+               FCOS
+               FSTP  resultado
+      end;
+    end;
+
+
+    // tan
+    'i(':
+    begin
+      {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   resultado
+               MOV   EAX, radianss
+               SUB   EAX, 1
+               JZ    @GRAU
+               JMP   @RADIANO
+
+               @GRAU:
+               CALL  AssemblyGrau
+               JMP   @RADIANO
+
+               @RADIANO:
+               FSINCOS
+               FDIVP ST(1), ST(0)
+               FSTP  resultado
+      end;
+    end;
+
+
+    // arcsin
+    'G(':
+    begin
+         {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   resultado
+               FLD   resultado
+               FMULP ST(1), ST(0)
+               FLD1
+               FLD   ST(1)
+               FSUBP ST(1), ST(0)
+               FDIVP ST(1), ST(0)
+
+               FSQRT
+               FLD1
+               FPATAN
+
+               MOV   EAX, radianss
+               SUB   EAX, 1
+               JZ    @GRAU
+               JMP   @RADIANO
+
+               @GRAU:
+               CALL  AssemblyRadiano
+               JMP   @RADIANO
+
+               @RADIANO:
+               FST   resultado
+      end;
+
+    end;
+
+
+    //arccos
+    'H(':
+    begin
+          {$ASMMODE intel}
+      asm
+               // aaa
+      end;
+
+    end;
+
+
+    //arctan
+    'I(':
+    begin
+          {$ASMMODE intel}
+      asm
+
+               FINIT
+               FLD   resultado
+               FLD1
+               FPATAN
+               MOV   EAX, radianss
+               SUB   EAX, 1
+               JZ    @GRAU
+               JMP   @RADIANO
+
+               @GRAU:
+               CALL  AssemblyRadiano
+               JMP   @RADIANO
+
+               @RADIANO:
+               FST   resultado
+      end;
+    end;
+  end;
+
+
+  exit(floattostr(resultado));
+end;
+
+function TForm1.precedencia(operador: string): byte;
+begin
+
+  case operador of
+    '~': exit(6);
+    '^': exit(5);
+    '*', '/': exit(4);
+    '+', '-': exit(3);
+    '(': exit(2);
+  end;
+end;
+
+function TForm1.calcular(numb1, numb2: double; operation: string): double;
+begin
+  case operation of
+    '+':
+    begin
+  {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   numb1
+               FLD   numb2
+               FADDP ST(1),ST(0)
+               FSTP  result
+      end;
+    end;
+
+    '-':
+    begin
+    {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   numb1
+               FLD   numb2
+               FSUBP ST(1), ST(0)
+               FSTP  result
+      end;
+    end;
+
+    '*':
+    begin
+  {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   numb1
+               FLD   numb2
+               FMULP ST(1), ST(0)
+               FSTP  result
+      end;
+    end;
+
+    '/':
+    begin
+  {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   numb1
+               FLD   numb2
+               FDIVP ST(1), ST(0)
+               FSTP  result
+      end;
+    end;
+
+    '^':
+    begin
+  {$ASMMODE intel}
+      asm
+               FINIT
+               FLD   numb2
+               FLD1
+               FLD   numb1
+               FYL2X
+               FMUL  numb2
+               FLD   ST
+               FRNDINT
+               FSUB  ST(1), ST
+               FXCH
+               F2XM1
+               FLD1
+               FADD
+               FSCALE
+               FSTP  result
+      end;
+    end;
+  end;
+end;
 
 end.
