@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 427
+  Left = 153
   Height = 219
-  Top = 523
+  Top = 694
   Width = 362
   Caption = 'Form1'
   ClientHeight = 219
@@ -20,8 +20,8 @@ object Form1: TForm1
     ChildSizing.ControlsPerLine = 1
     ClientHeight = 31
     ClientWidth = 106
-    OnClick = radioClick
     ParentBidiMode = False
+    ParentShowHint = False
     TabOrder = 40
     object deg: TRadioButton
       Left = 0
@@ -594,11 +594,21 @@ object Form1: TForm1
     TabOrder = 41
   end
   object view: TEdit
-    Left = 143
+    Left = 272
     Height = 22
-    Top = 38
-    Width = 169
+    Top = 40
+    Width = 81
     TabOrder = 42
     Text = 'debug (remover)'
+  end
+  object sintax: TCheckBox
+    Left = 152
+    Height = 18
+    Top = 40
+    Width = 113
+    Caption = 'Verificar sintaxe'
+    Checked = True
+    State = cbChecked
+    TabOrder = 43
   end
 end

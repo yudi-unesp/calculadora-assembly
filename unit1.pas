@@ -15,6 +15,7 @@ type
     acfunc: TButton;
     backspace: TButton;
     cfunc: TButton;
+    sintax: TCheckBox;
     cos: TButton;
     decop: TButton;
     deg: TRadioButton;
@@ -91,17 +92,14 @@ type
 var
   Form1: TForm1;
   holder: string = '0';
-  degrees: shortint = 1;
+  degrees: integer = 1;
   memory: double = 0;
   par: integer = 0;
-  numberflag: boolean = True;
   decimalflag: boolean = False;
   operatorflag: boolean = False;
-  parflag: boolean = False;
-  endopflag: boolean = False;
-  reqnumberflag: boolean = False;
   euler: double = 2.7182818284590452353602874713527;
   pii: double = 3.1415926535897932384626433832795;
+  rootflag: boolean = False;
 
 implementation
 
@@ -117,6 +115,16 @@ da calculadora.
 Apesar de simples e razoavelmente legível, o código do display implementado é ineficiente, já que,
 toda vez que o usuário introduz um valor, todo o texto display precisa ser reconstruído do início.
 
+Demais limitações:
+O campo hint não é o local apropriado para armazenar os códigos dos botões.
+
+O validador da sintaxe é bem permissivo e avalia apenas casos
+simples. Há um botão para desativar a verificação, no caso de contratempos.
+Não há tratamento de erros fora do validador da sintaxe.
+
+
+Glossário:
+
 a é ln
 b é log
 c é √x
@@ -129,7 +137,14 @@ H é arccos
 i é tan
 I é arctan
 j é pi
-z é Erro}
+z é Erro
+
+
+holder: Onde os códigos digitados são armazenados
+field: Caixa de texto que mostra os códigos digitados convertidos para o usuário (display)
+2nd: Função inv
+⌫  : Backspace
+}
 
 // Atualiza o campo de display da calculadora
 procedure TForm1.UpdateField();
@@ -138,10 +153,12 @@ var
   i: char;
 begin
   txt := '';
+  // Para cada caractere no holder, faça
   for i in holder do
   begin
+    // Interpreta o código e mostra ao usuário de maneira legível
     case i of
-      // Interpreta o código e mostra ao usuário de maneira legível
+      // Utiliza a função Concat para legibilidade do código
       'a': txt := Concat(txt, 'ln');
       'b': txt := Concat(txt, 'log');
       'c', 'd': txt := Concat(txt, '√');
@@ -158,113 +175,140 @@ begin
         txt := Concat(txt, i);
     end;
   end;
+  // Atualizar display, de fato
   field.Text := txt;
-  // Debug tirar depois
+  // TODO: Debug tirar depois
   view.Text := holder;
 end;
 
 // Desligar shift
 procedure TForm1.ShiftOff();
 begin
+  // Remover itálico
   inv.Font.Style := [];
   sin.Font.Style := [];
   cos.Font.Style := [];
   tan.Font.Style := [];
+  // Minúsculas, para tirar o arc
   sin.Hint := 'g(';
   cos.Hint := 'h(';
   tan.Hint := 'i(';
 end;
 
-{ É chamada quando = (igual) é pressionado
-  O validador da sintaxe é bem permissivo e
-  avalia apenas casos simples}
+// É chamada dentro da função equalsfunc, quando = (igual) é pressionado
 function TForm1.CheckString(str: string): boolean;
 var
   C: char;
-  i: integer;
+  i: integer = 1;
 begin
+  // Se houver um erro no holder, saia
   if holder = 'z' then
     exit(False);
 
-  if holder[1] in ['+', '-', '*', '/', 'f', 'd'] then
+  // Se o primeiro caractere do holder for um operador fora de ordem, saia
+  if holder[1] in ['+', '-', '*', '/', '^', 'f', 'd'] then
   begin
     displayerror();
     exit(False);
   end;
-  for C in str do
+
+  // Para todo caractere de str, faça
+  while i <= length(str) do
   begin
-    case C of
+    case str[i] of
+      // Caso for um ponto
       '.':
       begin
+        // Se já houver um ponto na mesma sequência de números, saia
         if decimalflag = True then
         begin
           displayerror();
-          exit;
+          exit(False);
         end;
+        // Indicar que há um ponto nesta sequência de números
         decimalflag := True;
-        continue;
       end;
 
-      '+', '-', '*', '/', '^':
+      // Operadores primários e operações
+      // ln, log, √x, sin, cos, tan, arcsin, arccos, arctan
+      '+', '-', '*', '/', 'a'..'c', 'e', 'g'..'j', 'G'..'I', '(':
       begin
-        if operatorflag = True then
+        // Se o operador/operação não for sucedido por um número, saia
+        if not (str[i + 1] in ['0'..'9', 'a'..'c', 'e', 'g'..'j',
+          'G'..'I', '(', '~']) then
         begin
           displayerror();
-          exit;
+          exit(False);
         end;
-        operatorflag := True;
         decimalflag := False;
       end;
 
+      '~':
+      begin
+        if i < length(str) then
+        begin
+          // Se o operador não for sucedido por um número ou abrir parêntese, saia
+          if not (str[i + 1] in ['0'..'9', '(']) then
+          begin
+            displayerror();
+            exit(False);
+          end;
+        end;
+      end;
+      // Números
+      '0'..'9':
+      begin
+        // Desde que dentro dos limites da string, faça
+        if i < length(str) then
+        begin
+          // Se o número não for sucedido por um outro número, operador ou fechar parêntese, saia
+          if not (str[i + 1] in ['0'..'9', '+', '-', '*', '/', '^', 'f', ')', 'd']) then
+          begin
+            displayerror();
+            exit(False);
+          end;
+        end;
+
+      end;
+      // y√x
       'd':
       begin
-        if numberflag = False then
+        // TODO: Testar fatorial
+        // Se o y não for um número, fechar parêntese ou operador de fatorial, saia
+        if not (str[i - 1] in ['0'..'9', ')', '!']) then
         begin
           displayerror();
-          exit;
+          exit(False);
         end;
-        operatorflag := True;
+
       end;
 
-      // Cada abertura de parenteses soma 1
-      '(':
+      // ! fatorial
+      'f':
       begin
-
-        if numberflag = True then
+        // Desde que dentro dos limites da string, faça
+        if i < length(str) then
         begin
-          displayerror();
-          exit;
+          // Se o fatorial não for sucedido por um operador ou fecha parêntese, saia
+          if not (str[i + 1] in ['+', '-', '*', '/', '^', ')']) then
+          begin
+            displayerror();
+            exit(False);
+          end;
         end;
-        par += 1;
-      end;
-      // Cada fechamento de parenteses subtrai 1
-      ')':
-      begin
-        par -= 1;
-        if par < 0 then
-        begin
-          displayerror();
-          exit;
-        end;
-      end;
 
-      else
-        operatorflag := False;
-      begin
-        if IsNumber(C) = True then
-        begin
-          numberflag := True;
-        end;
       end;
-
     end;
+    i += 1;
   end;
-  // Se parenteses for ≠ 0,
-  if (par <> 0) or (decimalflag = True) or (operatorflag = True) then
+
+  // Se o número de abre parenteses subtraído de fecha parênteses for ≠ 0, saia
+  if (par <> 0) or (decimalflag = True) then
   begin
     displayerror();
     exit(False);
   end;
+  // Senão, verdadeiro
   exit(True);
 end;
 
@@ -291,33 +335,43 @@ end;
 // Chamo quando aperto =
 procedure TForm1.equalsfunc(Sender: TObject);
 begin
-  if CheckString(holder) then
+  // Caso o usuário tenha habilidado a verificação E a string for inválida, saia
+  if ((sintax.Checked = True) and not (CheckString(holder))) then
   begin
-    holder := parse();
-    UpdateField();
+    exit();
   end;
+  // Senão, calcule
+  holder := parse();
+  UpdateField();
 end;
 
 // Botão 2nd na interface. Shift para as funções sin, cos e tan
 procedure TForm1.invert(Sender: TObject);
 begin
+  // Se o botão 2nd não estiver em negrito
   if TButton(Sender).Font.Style = [] then
   begin
+    // Deixar o botão 2nd em negrito
     TButton(Sender).Font.Style := [fsBold];
+    // Definir operações como itálico
     sin.Font.Style := [fsItalic];
     cos.Font.Style := [fsItalic];
     tan.Font.Style := [fsItalic];
+    // Alterar os códigos para as maíusculas (arc)
     sin.Hint := 'G(';
     cos.Hint := 'H(';
     tan.Hint := 'I(';
   end
+  // Se o botão 2nd estiver em negrito
   else
   begin
+    // Desative o shift
     ShiftOff();
   end;
 end;
 
 // Botão m+
+// Soma à memória
 procedure TForm1.memoryadd(Sender: TObject);
 begin
   if IsNumberOnly(holder) then
@@ -325,12 +379,14 @@ begin
 end;
 
 // Botão mc
+// Limpa a memória
 procedure TForm1.memclrClick(Sender: TObject);
 begin
   memory := 0;
 end;
 
 // Botão m-
+// Subtrai à memória
 procedure TForm1.memorysub(Sender: TObject);
 begin
   if IsNumberOnly(holder) then
@@ -338,42 +394,51 @@ begin
 end;
 
 // Botão mr
+// Insere o número no holder
 procedure TForm1.memoryrecall(Sender: TObject);
+var
+  aux: string;
 begin
+  // Se o número for negativo, retire o sinal, converta para string e
+  // adicione ~ antes do número
   if memory < 0 then
   begin
     memory *= -1;
-    if (holder = 'z') or (holder = '0') then
-      holder := '~' + floattostr(memory)
-    else
-      holder += '~' + floattostr(memory);
-
+    aux := '~' + floattostr(memory);
   end
+  // Se o número for positivo, apenas converta para string
   else
-
+  begin
+    aux := floattostr(memory);
+  end;
+  // Se o holder estiver "vazio" ou com erro, substitua
   if (holder = 'z') or (holder = '0') then
-    holder := floattostr(memory)
+    holder := aux
+  // Senão, acrescente
   else
-    holder += floattostr(memory);
-
-
+    holder += aux;
+  // Atualize o display
   UpdateField();
 end;
 
 // Botões circulares Deg e Rad
 procedure TForm1.radioClick(Sender: TObject);
 begin
+  // Se o botão Deg estiver selecionado
   if deg.Checked then
     degrees := 1
+  // Se o botão Rad estiver selecionado
   else
     degrees := 0;
 end;
+
 
 // Apaga
 procedure TForm1.bckspc(Sender: TObject);
 var
   str: string;
 begin
+  // Copiar o holder, para fins de legibilidade
   str := holder;
   // Caso tenha tamanho 1, define o display para 0
   if LENGTH(str) = 1 then
@@ -407,17 +472,19 @@ begin
         SetLength(str, LENGTH(str) - 1);
     end;
   end;
+  // Atualizar o holder
   holder := str;
+  // Atualizar o display
   UpdateField();
 end;
 
-// Botão C
+
+// Botão C - Clear
+// Limpa o holder
 procedure TForm1.resetC(Sender: TObject);
 begin
   par := 0;
-  numberflag := True;
   decimalflag := False;
-  operatorflag := False;
   holder := '0';
   UpdateField();
 end;
@@ -491,11 +558,11 @@ begin
   while i <= length(holder) do
   begin
     case holder[i] of
-      '0' .. '9', '.':
+      '0' .. '9':
       begin
         polindex += 1;
         polish[polindex] := '';
-        while (IsNumber(holder[i])) and (holder[i] <> '.') do
+        while (IsNumber(holder[i])) or (holder[i] = '.') do
         begin
           polish[polindex] += holder[i];
           i += 1;
@@ -575,6 +642,13 @@ begin
         polish[parindex[parindextop]] :=
           solve(polish, parindex[parindextop], polindex);
         polindex := parindex[parindextop];
+        if rootflag = True then
+        begin
+          polish[polindex - 1] := polish[polindex];
+          polindex -= 1;
+          rootflag := False;
+        end;
+
         parindextop -= 1;
 
       end;
@@ -651,7 +725,7 @@ var
   pilha: array[1..256] of double;
   pilhatop: integer = 0;
   resultado: double;
-  radianss: shortint;
+  radianss: integer;
   aux: double;
 begin
   i := parlow;
@@ -749,6 +823,7 @@ begin
     'd(':
     begin
       aux := strtofloat(polish[parlow - 2]);
+      rootflag := True;
            {$ASMMODE intel}
       asm
                FINIT
