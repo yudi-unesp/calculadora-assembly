@@ -498,7 +498,7 @@ procedure TForm1.typetxthint(Sender: TObject);
 begin
   if (length(holder) = 255) then
     exit();
-  if ((holder = '0') or (holder = 'z')) AND (TButton(Sender).Hint <> '.') then
+  if ((holder = '0') or (holder = 'z')) and (TButton(Sender).Hint <> '.') then
   begin
     case TButton(Sender).Hint of
       '+', '-', '*', '/', 'f', 'd(': holder := Concat('0', TButton(Sender).Hint);
@@ -1005,7 +1005,32 @@ begin
     begin
           {$ASMMODE intel}
       asm
-               // aaa
+               FINIT
+               FLD     resultado
+               FLD     resultado
+               FMULP   ST(1), ST(0)
+               FLD1
+               FLD     ST(1)
+               FSUBP   ST(1), ST(0)
+               FXCH
+               FDIVP   ST(1), ST(0)
+
+               FSQRT
+               FLD1
+               FPATAN
+
+               MOV   EAX, radianss
+               SUB   EAX, 1
+               JZ    @GRAU
+               JMP   @RADIANO
+
+               @GRAU:
+               CALL  AssemblyRadiano
+               JMP   @RADIANO
+
+               @RADIANO:
+               FST   resultado
+
       end;
 
     end;
