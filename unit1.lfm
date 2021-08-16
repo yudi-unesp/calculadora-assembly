@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 25
+  Left = 0
   Height = 219
-  Top = 36
+  Top = 23
   Width = 362
   Caption = 'Form1'
   ClientHeight = 219
@@ -592,23 +592,5 @@ object Form1: TForm1
     OnClick = bckspc
     ParentFont = False
     TabOrder = 41
-  end
-  object view: TEdit
-    Left = 272
-    Height = 22
-    Top = 40
-    Width = 81
-    TabOrder = 42
-    Text = 'debug (remover)'
-  end
-  object sintax: TCheckBox
-    Left = 152
-    Height = 18
-    Top = 40
-    Width = 113
-    Caption = 'Verificar sintaxe'
-    Checked = True
-    State = cbChecked
-    TabOrder = 43
   end
 end

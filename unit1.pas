@@ -1,3 +1,4 @@
+// Carlos e Renan
 unit Unit1;
 
 {$mode objfpc}{$H+}
@@ -15,12 +16,10 @@ type
     acfunc: TButton;
     backspace: TButton;
     cfunc: TButton;
-    sintax: TCheckBox;
     cos: TButton;
     decop: TButton;
     deg: TRadioButton;
     divop: TButton;
-    view: TEdit;
     equop: TButton;
     fact: TButton;
     field: TEdit;
@@ -82,8 +81,9 @@ type
     function calcular(numb1, numb2: double; operation: string): double;
     function precedencia(operador: string): byte;
     function solve(polish: array of string; parlow, parhigh: integer): string;
-    function CheckString(str: string): boolean;
     function parse(): string;
+    function factorial(n: integer): integer;
+
 
   private
 
@@ -122,9 +122,7 @@ toda vez que o usuário introduz um valor, todo o texto display precisa ser reco
 Demais limitações:
 O campo hint não é o local apropriado para armazenar os códigos dos botões.
 
-O validador da sintaxe é bem permissivo e avalia apenas casos
-simples. Há um botão para desativar a verificação, no caso de contratempos.
-Não há tratamento de erros fora do validador da sintaxe.
+Não há tratamento de erros.
 
 
 Glossário:
@@ -181,8 +179,6 @@ begin
   end;
   // Atualizar display, de fato
   field.Text := txt;
-  // TODO: Debug tirar depois
-  view.Text := holder;
 end;
 
 // Desligar shift
@@ -197,127 +193,6 @@ begin
   sin.Hint := 'g(';
   cos.Hint := 'h(';
   tan.Hint := 'i(';
-end;
-
-// É chamada dentro da função equalsfunc, quando = (igual) é pressionado
-function TForm1.CheckString(str: string): boolean;
-var
-  C: char;
-  i: integer = 1;
-  // Flag de decimal
-  decimalflag: boolean = False;
-  // Contagem de parênteses
-  par: integer = 0;
-begin
-  // Se houver um erro no holder, saia
-  if holder = 'z' then
-    exit(False);
-
-  // Se o primeiro caractere do holder for um operador fora de ordem, saia
-  if holder[1] in ['+', '-', '*', '/', '^', 'f', 'd'] then
-  begin
-    displayerror();
-    exit(False);
-  end;
-
-  // Para todo caractere de str, faça
-  while i <= length(str) do
-  begin
-    case str[i] of
-      // Caso for um ponto
-      '.':
-      begin
-        // Se já houver um ponto na mesma sequência de números, saia
-        if decimalflag = True then
-        begin
-          displayerror();
-          exit(False);
-        end;
-        // Indicar que há um ponto nesta sequência de números
-        decimalflag := True;
-      end;
-
-      // Operadores primários e operações
-      // ln, log, √x, sin, cos, tan, arcsin, arccos, arctan
-      '+', '-', '*', '/', 'a'..'c', 'e', 'g'..'j', 'G'..'I', '(':
-      begin
-        // Se o operador/operação não for sucedido por um número, saia
-        if not (str[i + 1] in ['0'..'9', 'a'..'c', 'e', 'g'..'j',
-          'G'..'I', '(', '~']) then
-        begin
-          displayerror();
-          exit(False);
-        end;
-        decimalflag := False;
-      end;
-
-      '~':
-      begin
-        if i < length(str) then
-        begin
-          // Se o operador não for sucedido por um número ou abrir parêntese, saia
-          if not (str[i + 1] in ['0'..'9', '(']) then
-          begin
-            displayerror();
-            exit(False);
-          end;
-        end;
-      end;
-      // Números
-      '0'..'9':
-      begin
-        // Desde que dentro dos limites da string, faça
-        if i < length(str) then
-        begin
-          // Se o número não for sucedido por um outro número, operador ou fechar parêntese, saia
-          if not (str[i + 1] in ['0'..'9', '+', '-', '*', '/', '^', 'f', ')', 'd']) then
-          begin
-            displayerror();
-            exit(False);
-          end;
-        end;
-
-      end;
-      // y√x
-      'd':
-      begin
-        // TODO: Testar fatorial
-        // Se o y não for um número, fechar parêntese ou operador de fatorial, saia
-        if not (str[i - 1] in ['0'..'9', ')', '!']) then
-        begin
-          displayerror();
-          exit(False);
-        end;
-
-      end;
-
-      // ! fatorial
-      'f':
-      begin
-        // Desde que dentro dos limites da string, faça
-        if i < length(str) then
-        begin
-          // Se o fatorial não for sucedido por um operador ou fecha parêntese, saia
-          if not (str[i + 1] in ['+', '-', '*', '/', '^', ')']) then
-          begin
-            displayerror();
-            exit(False);
-          end;
-        end;
-
-      end;
-    end;
-    i += 1;
-  end;
-
-  // Se o número de abre parenteses subtraído de fecha parênteses for ≠ 0, saia
-  if (par <> 0) or (decimalflag = True) then
-  begin
-    displayerror();
-    exit(False);
-  end;
-  // Senão, verdadeiro
-  exit(True);
 end;
 
 // Mostrar erro na tela
@@ -343,12 +218,7 @@ end;
 // Chamo quando aperto =
 procedure TForm1.equalsfunc(Sender: TObject);
 begin
-  // Caso o usuário tenha habilidado a verificação E a string for inválida, saia
-  if ((sintax.Checked = True) and not (CheckString(holder))) then
-  begin
-    exit();
-  end;
-  // Senão, calcule
+  // Calcule
   holder := parse();
   UpdateField();
 end;
@@ -542,8 +412,6 @@ end;
 // Converter para notação polonesa
 function TForm1.parse(): string;
 var
-  // Pilha de números
-  pilha: array[1..256] of string;
   // Notação polonesa
   polish: array[1..256] of string;
   polindex: integer = 0;
@@ -554,10 +422,8 @@ var
   operators: array[1..256] of string;
   operatorstop: integer = 0;
   // Variáveis auxiliares
-  aux: double;
-  aux2: double;
   i: integer = 1;
-  str: string;
+  auxi: integer;
 begin
   // Envolver o holder entre parênteses
   holder := '(' + holder + ')';
@@ -598,28 +464,10 @@ begin
       'f':
       begin
         // Execute a operação no último número da pilha polish
-        aux := strtofloat(polish[polindex]);
-         {$ASMMODE intel}
-        asm
-                 // TODO: Arrumar código
-                 FINIT
-                 FLD1
-                 FLDZ
-                 MOV   ECX, aux
+        auxi := round(strtofloat(polish[polindex]));
 
-                 @loop:
-                 FLD1
-                 FADDP ST(1), ST(0)
-                 FMUL  ST(1), ST(0)
-
-                 DEC   ECX
-                 JNZ   @loop
-
-                 FSTP  aux
-                 FSTP  aux2
-        end;
         // E substitua-o pelo resultado
-        polish[polindex] := floattostr(aux2);
+        polish[polindex] := IntToStr(factorial(auxi));
       end;
 
       // ln, log, √x, y√x, sin, cos, tan, arcsin, arccos, arctan
@@ -1175,6 +1023,20 @@ begin
       end;
     end;
   end;
+end;
+
+function TForm1.factorial(n: integer): integer;
+var
+  s, i: integer;
+begin
+  i := 1;
+  s := 1;
+  while i <= n do
+  begin
+    s := s * i;
+    i := i + 1;
+  end;
+  exit(s);
 end;
 
 end.
